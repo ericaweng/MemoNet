@@ -1,6 +1,7 @@
 import glob
 import pickle
 import torch
+from tqdm import tqdm
 from torch.utils import data
 import numpy as np
 
@@ -276,13 +277,36 @@ class SocialDataset(data.Dataset):
 		# print(load_name)
 		with open(load_name, 'rb') as f:
 			data = pickle.load(f)
-
-		traj, masks = data
+		load_name_test = "./trajnet_image/test_trajnet.pkl"
+		# with open(load_name_test, 'rb') as f:
+		# 	data_test = pickle.load(f)
+		# test_dataset = SceneDataset(data_test,
+		# 							resize=1,#cfg['resize'],
+		# 							total_len=20)
+		# test_traj = test_dataset.trajectories
+		# load_name_train = "./trajnet_image/train_trajnet.pkl"
+		# with open(load_name_train, 'rb') as f:
+		# 	data_train = pickle.load(f)
+		traj, masks, scene_names = data
+		assert len(traj) == 1
+		# scene_names = []
+		# for t in traj[0]:
+		# 	row = data_test[(data_test['trackId'] == t[0][0]) & (data_test['frame'] == t[0][1])
+		# 					& (data_test['x'] == t[0][2]) & (data_test['y'] == t[0][3])]
+		# 	assert row.shape[0] == 1
+		# 	scene_name = row['sceneId'].values[0]
+		# 	scene_names.append(scene_name)
+		# find row in data_test that has the same values as each item in traj
+		# import ipdb; ipdb.set_trace()
 		traj_new = []
 
+		frame_ids = []
+		ped_ids = []
 		if id==False:
 			for t in traj:
 				t = np.array(t)
+				frame_ids.append(t[:,:,1])
+				ped_ids.append(t[:,:,0])
 				t = t[:,:,2:]
 				traj_new.append(t)
 				if set_name=="train":
@@ -333,9 +357,53 @@ class SocialDataset(data.Dataset):
 		self.mask_batches = masks_new.copy()
 		self.initial_pos_batches = np.array(initial_pos(self.trajectory_batches)) #for relative positioning
 		self.seq_start_end_batches = seq_start_end_list
+		self.scene_names = scene_names
+		self.frame_ids = frame_ids
+		self.ped_ids = ped_ids
+
+		print("trajectory_batches.shape:", self.trajectory_batches.shape)
+		print("mask_batches.shape:", self.mask_batches.shape)
+		print("initial_pos_batches.shape:", self.initial_pos_batches.shape)
+		print("len(seq_start_end_batches):", len(self.seq_start_end_batches[0]))
+
 		if verbose:
 			print("Initialized social dataloader...")
 
+
+class SceneDataset(data.Dataset):
+    def __init__(self, data, resize, total_len):
+        """ Dataset that contains the trajectories of one scene as one element in the list. It doesn't contain the
+		images to save memory.
+		:params data (pd.DataFrame): Contains all trajectories
+		:params resize (float): image resize factor, to also resize the trajectories to fit image scale
+		:params total_len (int): total time steps, i.e. obs_len + pred_len
+		"""
+
+        self.trajectories, self.meta, self.scene_list = self.split_trajectories_by_scene(
+            data, total_len)
+        self.trajectories = self.trajectories * resize
+
+    def __len__(self):
+        return len(self.trajectories)
+
+    def __getitem__(self, idx):
+        trajectory = self.trajectories[idx]
+        meta = self.meta[idx]
+        scene = self.scene_list[idx]
+        return trajectory, meta, scene
+
+    def split_trajectories_by_scene(self, data, total_len):
+        trajectories = []
+        meta = []
+        scene_list = []
+        for meta_id, meta_df in tqdm(data.groupby('sceneId', as_index=False),
+                                     desc='Prepare Dataset'):
+            trajectories.append(meta_df[['x', 'y'
+                                        ]].to_numpy().astype('float32').reshape(
+                                            -1, total_len, 2))
+            meta.append(meta_df)
+            scene_list.append(meta_df.iloc()[0:1].sceneId.item())
+        return np.array(trajectories), meta, scene_list
 
 class SocialDataset_new(data.Dataset):
 
@@ -346,8 +414,12 @@ class SocialDataset_new(data.Dataset):
 		with open(load_name, 'rb') as f:
 			data = pickle.load(f)
 
-		traj, masks = data
+		traj, masks, scene_names = data
 		traj_new = []
+
+		scene_names_new = []
+		for s in scene_names:
+			scene_names_new.append(s)
 
 		if id==False:
 			for t in traj:
@@ -398,6 +470,8 @@ class SocialDataset_new(data.Dataset):
 		traj_new = np.array(traj_new)
 		masks_new = np.array(masks_new)
 
+		scene_names_new = np.array(scene_names_new)
+		self.scene_names = scene_names_new.copy()
 		self.trajectory_batches = traj_new.copy()
 		self.mask_batches = masks_new.copy()
 		self.initial_pos_batches = np.array(initial_pos_new(self.trajectory_batches)) #for relative positioning

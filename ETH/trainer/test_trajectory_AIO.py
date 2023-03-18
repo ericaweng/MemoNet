@@ -2,6 +2,7 @@ import os
 import math
 import datetime
 from random import sample
+import numpy as np
 
 import torch
 import torch.nn as nn
@@ -34,7 +35,7 @@ class Trainer:
 		self.max_epochs = self.cfg.num_epochs
 		# model
 		self.MemoNet = MemoNet(self.cfg)
-		self.MemoNet.model_encdec.load_state_dict(torch.load(self.cfg.model_encdec))
+		self.MemoNet.model_encdec.load_state_dict(torch.load(self.cfg.model_encdec, map_location='cpu'))
 		# loss
 		self.criterionLoss = nn.MSELoss()
 
@@ -81,6 +82,68 @@ class Trainer:
 		# print(past_abs.size())
 		return past_after, future_after, past_abs
 
+	@staticmethod
+	def save_trajectories(trajectory, save_dir, seq_name, frame, suffix=''):
+		"""Save trajectories in a text file.
+        Input:
+            trajectory: (np.array/torch.Tensor) Predcited trajectories with shape
+                        of (n_pedestrian, future_timesteps, 4). The last elemen is
+                        [frame_id, track_id, x, y] where each element is float.
+            save_dir: (str) Directory to save into.
+            seq_name: (str) Sequence name (e.g., eth_biwi, coupa_0)
+            frame: (num) Frame ID.
+            suffix: (str) Additional suffix to put into file name.
+        """
+		fname = f"{save_dir}/{seq_name}/frame_{int(frame):06d}{suffix}.txt"
+		if not os.path.exists(os.path.dirname(fname)):
+			os.makedirs(os.path.dirname(fname))
+
+		if isinstance(trajectory, torch.Tensor):
+			trajectory = trajectory.cpu().numpy()
+		np.savetxt(fname, trajectory, fmt="%.3f")
+
+	@staticmethod
+	def format_agentformer_trajectories(trajectory, data, cfg, timesteps=12, frame_scale=10, future=True):
+		formatted_trajectories = []
+		if not future:
+			trajectory = torch.flip(trajectory, [0, 1])
+		for i, track_id in enumerate(data['valid_id']):
+			if data['pred_mask'] is not None and data['pred_mask'][i] != 1.0:
+				continue
+			for j in range(timesteps):
+				if future:
+					curr_data = data['fut_data'][j]
+				else:
+					curr_data = data['pre_data'][j]
+				# Get data with the same track_id
+				updated_data = curr_data[curr_data[:, 1] == track_id].squeeze()
+				if cfg.dataset in [
+						'eth', 'hotel', 'univ', 'zara1', 'zara2', 'gen',
+						'real_gen', 'adversarial'
+				]:
+					# [13, 15] correspoinds to the 2D position
+					updated_data[[13, 15]] = trajectory[i, j].cpu().numpy()
+				elif 'sdd' in cfg.dataset:
+					updated_data[[2, 3]] = trajectory[i, j].cpu().numpy()
+				else:
+					raise NotImplementedError()
+				formatted_trajectories.append(updated_data)
+		if len(formatted_trajectories) == 0:
+			return np.array([])
+
+		# Convert to numpy array and get [frame_id, track_id, x, y]
+		formatted_trajectories = np.vstack(formatted_trajectories)
+		if cfg.dataset in ['eth', 'hotel', 'univ', 'zara1', 'zara2']:
+			formatted_trajectories = formatted_trajectories[:, [0, 1, 13, 15]]
+			formatted_trajectories[:, 0] *= frame_scale
+		elif cfg.dataset == 'trajnet_sdd':
+			formatted_trajectories[:, 0] *= frame_scale
+
+		if not future:
+			formatted_trajectories = np.flip(formatted_trajectories, axis=0)
+
+		return formatted_trajectories
+
 	def evaluate(self, generator):
 		prepare_seed(self.cfg.seed)
 		ade_48s = fde_48s = 0
@@ -126,6 +189,28 @@ class Trainer:
 					prediction = self.MemoNet(past_normalized, past_abs, end_pose)
 
 					prediction = prediction.data * scale
+
+					# save trajectories
+					if self.cfg.dataset == 'trajnet_sdd':
+						save_dir = f'../../trajectory_reward/results/trajectories/memonet/trajnet_sdd'
+					else:
+						save_dir = f'../../trajectory_reward/results/trajectories/memonet'
+					data['frame_scale'] = 10
+					frame = data['frame'] * data['frame_scale']
+					print(f"dataset: {self.cfg.dataset} frame:", frame)
+					gt_motion = fut_normalized + last_frame
+					obs_motion = past_normalized + last_frame
+					pred_motion = prediction + last_frame.unsqueeze(1)
+					for idx, sample in enumerate(pred_motion.transpose(0, 1)):
+						formatted = self.format_agentformer_trajectories(sample, data, self.cfg, timesteps=12,
+																	frame_scale=data['frame_scale'], future=True)
+						self.save_trajectories(formatted, save_dir, data['seq'], frame, suffix=f"/sample_{idx:03d}")
+					formatted = self.format_agentformer_trajectories(gt_motion, data, self.cfg, timesteps=12,
+																	 frame_scale=data['frame_scale'], future=True)
+					self.save_trajectories(formatted, save_dir, data['seq'], frame, suffix='/gt')
+					formatted = self.format_agentformer_trajectories(obs_motion, data, self.cfg, timesteps=8,
+																	 frame_scale=data['frame_scale'], future=False)
+					self.save_trajectories(formatted, save_dir, data['seq'], frame, suffix="/obs")
 
 					future_rep = fut_normalized.unsqueeze(1).repeat(1, 20, 1, 1)
 					distances = torch.norm(prediction - future_rep, dim=3)
