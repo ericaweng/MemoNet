@@ -102,7 +102,6 @@ class Trainer:
 		if isinstance(trajectory, torch.Tensor):
 			trajectory = trajectory.cpu().numpy()
 		np.savetxt(fname, trajectory, fmt="%.3f")
-		print("saved to {}".format(fname))
 
 	@staticmethod
 	def format_agentformer_trajectories(trajectory, data, cfg, timesteps=12, frame_scale=10, future=True):
@@ -193,11 +192,6 @@ class Trainer:
 					save_dir = self.save_trajectories_path
 					print(f"save_trajectories_path: {self.save_trajectories_path}")
 					if save_dir != "":
-						# save trajectories
-						# if self.cfg.dataset == 'trajnet_sdd':
-							# save_dir = f'../../trajectory_reward/results/trajectories/memonet/trajnet_sdd'
-						# else:
-							# save_dir = f'../../trajectory_reward/results/trajectories/memonet'
 						data['frame_scale'] = 10
 						frame = data['frame'] * data['frame_scale']
 						print(f"dataset: {self.cfg.dataset} frame:", frame)
