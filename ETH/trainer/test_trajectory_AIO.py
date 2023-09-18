@@ -190,7 +190,6 @@ class Trainer:
 					prediction = prediction.data * scale
 
 					save_dir = self.save_trajectories_path
-					print(f"save_trajectories_path: {self.save_trajectories_path}")
 					if save_dir != "":
 						data['frame_scale'] = 10
 						frame = data['frame'] * data['frame_scale']

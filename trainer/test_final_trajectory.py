@@ -130,14 +130,12 @@ class Trainer:
                               'hyang_8', 'little_0', 'little_1', 'little_2', 'little_3',
                               'nexus_5', 'nexus_6', 'quad_0', 'quad_1', 'quad_2', 'quad_3', ]
                 last_frame = traj[:, 7:8, :]
-                print(f"last_frame: {last_frame}")
                 output = output + last_frame.unsqueeze(1)
                 output = output.cpu().numpy()
                 labels = traj[:, self.config.past_len:, :].cpu().numpy()
                 obses = traj[:, :self.config.past_len, :].cpu().numpy()
                 for seq in seq_names:
                     idxs = np.where(np.array(dataset.scene_names) == seq)[0]
-                    print(f"seq_names: {idxs}")
                     out = output[idxs]
                     lbl = labels[idxs]
                     obs = obses[idxs]
