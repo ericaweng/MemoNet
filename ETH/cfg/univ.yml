@@ -5,6 +5,7 @@ results_root_dir             : results
 seed                         : 1
 dataset                      : univ
 data_root_ethucy             : datasets/eth_ucy
+save_trajectories            : True
 
 # ------------------- Feature Extractor -------------------------
 

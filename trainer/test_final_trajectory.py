@@ -12,6 +12,8 @@ torch.set_num_threads(5)
 class Trainer:
     def __init__(self, config):
 
+        self.save_trajectories_path = config.save_trajectories_path
+
         # test folder creating
         self.name_test = str(datetime.datetime.now())[:10]
         self.folder_test = 'testing/' + self.name_test + '_' + config.info
@@ -119,7 +121,6 @@ class Trainer:
                 
 
                 abs_past = traj[:, :self.config.past_len, :]
-                
                 output = self.mem_n2n(x, abs_past, seq_start_end, initial_pose)
                 output = output.data
                 # B, K, t, 2
@@ -157,36 +158,37 @@ class Trainer:
                     seq_name_to_frames[seq] = frames_this_seq
 
                 # save trajectories
-                save_path = f'../trajectory_reward/results/trajectories/memonet/trajnet_sdd'
-                if not os.path.exists(save_path):
-                    os.makedirs(save_path)
-                print("saving trajs to:", save_path)
+                save_path = self.save_trajectories_path
+                if save_path != "":
+                    if not os.path.exists(save_path):
+                        os.makedirs(save_path)
+                    print("saving trajs to:", save_path)
 
-                for seq_name, frames in seq_name_to_frames.items():
-                    for out, lbl, obs, frame_ids, ped_ids in tqdm(frames, desc=f'Saving trajs in {seq_name}...', total=len(frames)):
-                        assert np.all([np.all(frame_ids[0] == f for f in frame_ids)]), \
-                            f'all 20 frame_ids should be the same for all peds but are {frame_ids}'
-                        frame_ids = frame_ids[0]
-                        ped_ids = ped_ids[:,0]
+                    for seq_name, frames in seq_name_to_frames.items():
+                        for out, lbl, obs, frame_ids, ped_ids in tqdm(frames, desc=f'Saving trajs in {seq_name}...', total=len(frames)):
+                            assert np.all([np.all(frame_ids[0] == f for f in frame_ids)]), \
+                                f'all 20 frame_ids should be the same for all peds but are {frame_ids}'
+                            frame_ids = frame_ids[0]
+                            ped_ids = ped_ids[:,0]
 
-                        # obs --> (num_peds, 8, 2)
-                        dset_outputs = out
-                        dset_labels = lbl  # --> (num_peds, 12, 2)
+                            # obs --> (num_peds, 8, 2)
+                            dset_outputs = out
+                            dset_labels = lbl  # --> (num_peds, 12, 2)
 
-                        # check that the seqs metadata and agents match
-                        pred = dset_outputs.transpose(1, 0, 2, 3)  # --> (20, num_peds, 12, 2)
-                        flattened_gt = self.flatten_scene(dset_labels, frame_ids[self.config.past_len:], ped_ids)
-                        flattened_obs = self.flatten_scene(obs, frame_ids[:self.config.past_len], ped_ids)
+                            # check that the seqs metadata and agents match
+                            pred = dset_outputs.transpose(1, 0, 2, 3)  # --> (20, num_peds, 12, 2)
+                            flattened_gt = self.flatten_scene(dset_labels, frame_ids[self.config.past_len:], ped_ids)
+                            flattened_obs = self.flatten_scene(obs, frame_ids[:self.config.past_len], ped_ids)
 
-                        # todo save correct ped_ids and frame_ids
-                        for sample_i, sample in enumerate(pred):
-                            flattened_peds = self.flatten_scene(sample, frame_ids[self.config.past_len:], ped_ids)
-                            self.save_trajectories(flattened_peds, save_path, seq_name, frame_ids[self.config.past_len - 1],
-                                                   suffix=f'/sample_{sample_i:03d}')
-                        self.save_trajectories(flattened_gt, save_path, seq_name, frame_ids[self.config.past_len - 1],
-                                               suffix='/gt')
-                        self.save_trajectories(flattened_obs, save_path, seq_name, frame_ids[self.config.past_len - 1],
-                                               suffix='/obs')
+                            # todo save correct ped_ids and frame_ids
+                            for sample_i, sample in enumerate(pred):
+                                flattened_peds = self.flatten_scene(sample, frame_ids[self.config.past_len:], ped_ids)
+                                self.save_trajectories(flattened_peds, save_path, seq_name, frame_ids[self.config.past_len - 1],
+                                                       suffix=f'/sample_{sample_i:03d}')
+                            self.save_trajectories(flattened_gt, save_path, seq_name, frame_ids[self.config.past_len - 1],
+                                                   suffix='/gt')
+                            self.save_trajectories(flattened_obs, save_path, seq_name, frame_ids[self.config.past_len - 1],
+                                                   suffix='/obs')
 
 
 

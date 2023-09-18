@@ -31,7 +31,7 @@ def parse_config():
     parser.add_argument("--model_ae", default='./training/training_ae/...')
 
     parser.add_argument("--reproduce", default=False)
-    
+    parser.add_argument('--save_trajectories_path', default='../trajectories/memonet/trajnet_sdd')
 
     parser.add_argument("--dataset_file", default="SDD", help="dataset file")
     parser.add_argument("--info", type=str, default='', help='Name of training. '
