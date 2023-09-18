@@ -2,8 +2,10 @@ To save predicted trajectories to file for evaluation using our evaluation syste
 1. create a new virtual environment
 2. run `pip install -r requirements.txt` to install requirements for MemoNet.
 3. run `pip install -e .` to install the current directory as a package.
-4. download the MemoNet pretrained models and data (by the original authors) [here](https://drive.google.com/drive/folders/1qx5vbNgyM9aMH9jB_F07w3QIxzzi6StW%20%201qx5vbNgyM9aMH9jB_F07w3QIxzzi6StW) and place them in the correct directories. See the official MemoNet README instructions below to see what the correct file structure should look like.
-5. some technical details: `mv training/training_trajectory/model_encdec_trajectory.zip  training/training_trajectory/model_encdec_trajectory`
+4. download the MemoNet pretrained models (both ETH and SDD) and data (only ETH) by the original authors [here](https://drive.google.com/drive/folders/1qx5vbNgyM9aMH9jB_F07w3QIxzzi6StW%20%201qx5vbNgyM9aMH9jB_F07w3QIxzzi6StW) After, downloading, place them in the correct directories. See the official MemoNet README instructions below to see what the correct file structure should look like. However, DO NOT replace the `/data` directory (SDD data); only use the provided ETH data.
+For SDD data, we use custom processed data that is similar in format to the data provided by the original authors, with additional frame information so evaluation can be matched by frame. 
+Our processed data is located at `/data`. 
+5. rename pretrained SDD model so it can load properly: `mv training/training_trajectory/model_encdec_trajectory.zip  training/training_trajectory/model_encdec_trajectory`
 
 To save predictions for ETH: from `{joint_metrics_matter_root}/MemoNet/ETH`, run:
 6. `python test.py --info reproduce --gpu 0 --cfg <dataset_name>`
@@ -11,9 +13,9 @@ To save predictions for ETH: from `{joint_metrics_matter_root}/MemoNet/ETH`, run
 To save predictions for SDD Trajnet: from `{joint_metrics_matter_root}/MemoNet`, run:
 7. `python test_MemoNet.py --reproduce True --info reproduce --gpu 0`
 
-and the trajectory files will save to `{root}/trajectories/memonet` for all datasets.
+and the trajectory files will save to `{joint_metrics_matter_root}/trajectories/memonet` for all datasets.
 
-You can specify a different output path by changing the `--save_trajectories_path` argument.
+You can specify a different output path by changing the `--save_trajectories_path` argument for either ETH and SDD
 
 ---------------------------------------------
 
