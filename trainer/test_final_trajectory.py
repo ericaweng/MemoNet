@@ -188,9 +188,8 @@ class Trainer:
                             self.save_trajectories(flattened_obs, save_path, seq_name, frame_ids[self.config.past_len - 1],
                                                    suffix='/obs')
 
-
-
-                print(f"saved trajectories to {save_path}")
+                print(f"Done saving trajectories to {save_path}")
+                exit()
 
                 future_rep = traj_norm[:, 8:, :].unsqueeze(1).repeat(1, 20, 1, 1)
                 distances = torch.norm(output - future_rep, dim=3)

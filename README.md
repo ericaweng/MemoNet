@@ -4,15 +4,21 @@ To save predicted trajectories to file for evaluation using our evaluation syste
 3. download the MemoNet pretrained models (both ETH and SDD) and data (only ETH) by the original authors [here](https://drive.google.com/drive/folders/1qx5vbNgyM9aMH9jB_F07w3QIxzzi6StW%20%201qx5vbNgyM9aMH9jB_F07w3QIxzzi6StW) After, downloading, place them in the correct directories. See the official MemoNet README instructions below to see what the correct file structure should look like. However, DO NOT replace the `/data` directory (SDD data); only use the provided ETH data.
 For SDD data, we use custom processed data that is similar in format to the data provided by the original authors, with additional frame information so evaluation can be matched by frame. 
 Our processed data is located at `/data`. 
-4. rename pretrained SDD model so it can load properly: `mv training/training_trajectory/model_encdec_trajectory.zip  training/training_trajectory/model_encdec_trajectory`
+4. rename pretrained SDD model so it can load properly:
 
-To save predictions for ETH: from `{joint_metrics_matter_root}/MemoNet/ETH`, run:
-5. `python test.py --info reproduce --gpu 0 --cfg <dataset_name>`
+`mv training/training_trajectory/model_encdec_trajectory.zip  training/training_trajectory/model_encdec_trajectory`
 
-To save predictions for SDD Trajnet: from `{joint_metrics_matter_root}/MemoNet`, run:
-6. `python test_MemoNet.py --reproduce True --info reproduce --gpu 0`
+5. To save predictions for ETH: from `{joint_metrics_matter_root}/MemoNet/ETH`, run:
 
-and the trajectory files will save to `{joint_metrics_matter_root}/trajectories/memonet` for all datasets.
+`python test.py --info reproduce --gpu 0 --cfg <dataset_name>`
+
+where `<dataset_name>` is one of `eth`, `hotel`, `univ`, `zara1`,`zara2`.
+
+6. To save predictions for SDD Trajnet: from `{joint_metrics_matter_root}/MemoNet`, run:
+
+`python test_MemoNet.py --reproduce True --info reproduce --gpu 0`
+
+The trajectory files will save to `{joint_metrics_matter_root}/trajectories/memonet` for all datasets.
 
 You can specify a different output path by changing the `--save_trajectories_path` argument for either ETH and SDD
 
