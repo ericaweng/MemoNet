@@ -8,7 +8,7 @@ def parse_config():
 	parser.add_argument('--cfg', default='eth')
 	parser.add_argument('--gpu', type=int, default=0)
 	parser.add_argument('--tmp', action='store_true', default=False)
-	parser.add_argument('--save_trajectories_path', default='../../trajectories/memonet')
+	parser.add_argument('--save_trajectories_path', default='../../results/trajectories/memonet')
 
 	parser.add_argument("--info", type=str, default='', help='Name of training/testing.')
 	return parser.parse_args()

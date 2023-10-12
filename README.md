@@ -18,7 +18,7 @@ where `<dataset_name>` is one of `eth`, `hotel`, `univ`, `zara1`,`zara2`.
 
 `python test_MemoNet.py --reproduce True --info reproduce --gpu 0`
 
-The trajectory files will save to `{joint_metrics_matter_root}/trajectories/memonet` for all datasets.
+The trajectory files will save to `{joint_metrics_matter_root}/results/trajectories/memonet` for all datasets.
 
 You can specify a different output path by changing the `--save_trajectories_path` argument for either ETH and SDD
 
