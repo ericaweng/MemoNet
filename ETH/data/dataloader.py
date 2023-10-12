@@ -1,8 +1,7 @@
-import os, random, numpy as np, copy
+import random, copy
 
 from .preprocessor import preprocess
 from .ethucy_split import get_ethucy_split
-from utils.utils import print_log
 
 
 class data_generator(object):
